@@ -4,38 +4,37 @@ from xero.auth import PrivateCredentials
 
 from nio import Block
 from nio.signal.base import Signal
-from nio.properties import VersionProperty, ObjectProperty, StringProperty, \
+from nio.properties import VersionProperty, ListProperty, StringProperty, \
     PropertyHolder, FloatProperty
 
 
-# class LineItems(PropertyHolder):
-#     description = StringProperty(title='Line Item Description',
-#                                  default='Invoice Description')
-#     unit_amount = FloatProperty(title='Unit Amount', default='{{ $amount }}')
-#     tax_amount = FloatProperty(title='Tax Amount', default='{{ $sales_tax }}')
+class LineItems(PropertyHolder):
+    description = StringProperty(title='Line Item Description',
+                                 default='Invoice Description')
+    unit_amount = FloatProperty(title='Unit Amount', default='{{ $amount }}')
+    tax_amount = FloatProperty(title='Tax Amount', default='{{ $sales_tax }}')
 
 
 class XeroPut(Block):
 
-    # version = VersionProperty('0.1.0')
+    version = VersionProperty('0.1.0')
     # consumer_key = StringProperty(title='Xero Consumer Key',
     #                               default='[[XERO_CONSUMER_KEY]]',
     #                               allow_none=False)
-    # rsa_key = StringProperty(title='RSA Private Key',
-    #                          default='[[RSA_PRIVATE_KEY]]',
-    #                          allow_none=False)
 
     # TODO: Modify defaults to sync with Stripe Payment Received output
         # What other properties wanting to pass along?
         # Easier to have just one kwargs field? Input pre-formatted incoming signal dict?
 
     # status = StringProperty(title='Invoice Status', default='PAID')
-    # contact_name = StringProperty(title='Contact Name',
-    #                               default='{{ $contact_name }}')
-    # invoice_type = StringProperty(title='Invoice Type',
-    #                       default='ACCREC',
-    #                       allow_none=False)
-    # line_items = ObjectProperty(LineItems, title='Invoice Line Item')
+    # contact_id = StringProperty(title='Customer(Contact) ID',
+    #                               default='{{ $customer_id }}')
+    contact_name = StringProperty(title='Customer(Contact) Name',
+                                  default='{{ $customer_name }}')
+    invoice_type = StringProperty(title='Invoice Type',
+                          default='ACCREC',
+                          allow_none=False)
+    line_items = ListProperty(LineItems, title='Invoice Line Item')
 
     def __init__(self):
         self.xero = None
@@ -44,8 +43,10 @@ class XeroPut(Block):
 
     def configure(self, context):
         super().configure(context)
-        # json_dict = {}
+
+        # TODO: MAKE con_key AN ENV VARIABLE
         con_key = "3L3FFYWBR1AK83EOLI9JUWOXWEMSHF"
+
         with open('blocks/xero/privatekey.pem') as keyfile:
             rsa_private_key = keyfile.read()
 
@@ -59,9 +60,9 @@ class XeroPut(Block):
     def process_signals(self, signals):
         for signal in signals:
             resp_signal = self.xero.invoices.put({
-                'Type': 'ACCREC',
+                'Type': self.invoice_type(signal),
                 'Contact': {
-                    'Name': 'Kevin Cowley'
+                    'Name': self.contact_name(signal)
                 },
                 'LineItems': [{
                     'Description': 'Desc',
@@ -71,11 +72,9 @@ class XeroPut(Block):
                 }]
             })
             # TODO: ALSO NEEDS TO ADD A JOURNAL ENTRY FOR SIGNAL
-            
+
         self.notify_signals([Signal(resp_signal[0])])
 
-
-# TODO: Turn this into a base block?
 
 # "Private Application"
     # Generate RSA bs and create key in app.xero.com
