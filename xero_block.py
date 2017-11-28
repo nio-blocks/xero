@@ -44,27 +44,19 @@ class XeroPut(Block):
 
     def configure(self, context):
         super().configure(context)
-        print('@@@@@@@@@@@')
-        print('CONFIGURE')
-        print('@@@@@@@@@@@')
         # json_dict = {}
-        con_key = "BHLXMHJQPUUBM8ZKVBJCQLKTN860JE"
-        rsa_private_key = ''                            # TODO: REGENERATE AND ADD
+        con_key = "3L3FFYWBR1AK83EOLI9JUWOXWEMSHF"
+        with open('blocks/xero/privatekey.pem') as keyfile:
+            rsa_private_key = keyfile.read()
+
         self.credentials = PrivateCredentials(con_key,
                                               rsa_private_key)
         self.xero = Xero(self.credentials)
 
     def start(self):
         super().start()
-        # self.xero = Xero(self.credentials)
-        print('&&&&&&&&&&')
-        print('START')
-        print('&&&&&&&&&&')
 
     def process_signals(self, signals):
-        print('!!!!!!!!!!')
-        print('PROCESS_SIGNALS')
-        print('!!!!!!!!!!')
         for signal in signals:
             resp_signal = self.xero.invoices.put({
                 'Type': 'ACCREC',
@@ -78,6 +70,8 @@ class XeroPut(Block):
                     'TaxAmount': 1.11
                 }]
             })
+            # TODO: ALSO NEEDS TO ADD A JOURNAL ENTRY FOR SIGNAL
+            
         self.notify_signals([Signal(resp_signal[0])])
 
 
