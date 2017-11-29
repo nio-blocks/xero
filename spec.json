@@ -1,40 +1,43 @@
 {
-  "namespace/BlockName": {
-    "version": "1.0.0",
-    "description": "Description of the block.",
+  "nio/XeroPut": {
+    "version": "0.1.0",
+    "description": "Block to add invoices and manual journal entries to a Xero account",
     "properties": {
-      "<property1>": {
-        "description": "Required description of the property"
+      "consumer_key": {
+        "title": "Xero Consumer Key",
+        "type": "StringType",
+        "description": "API Key from Xero",
+        "default": "[[XERO_CONSUMER_KEY]]"
       },
-      "<property2>": {
-        "default": "Optional metadata with any key.",
-        "description": "Required description of the property"
+      "contact_name": {
+        "title": "Customer(Contact) Name",
+        "type": "StringType",
+        "description": "Name of customer invoiced",
+        "default": "{{ $customer_name }}"
+      },
+      "invoice_type": {
+        "title": "Invoice Type",
+        "type": "StringType",
+        "description": "Either ACCREC for receivables or ACCPAY for payables",
+        "default": "ACCREC"
+      },
+      "line_items": {
+        "title": "Invoice Line Item",
+        "type": "ObjectType",
+        "description": "Information about the transaction",
+        "default": {}
       }
     },
     "inputs": {
-      "<input1 | default>": {
-        "description": "Required description of the input"
-      },
-      "<input2>": {
-        "description": "Required description of the input"
+      "default": {
+        "description": "Any list of signals containing relevant accounting data"
       }
     },
     "outputs": {
-      "<output1 | default>": {
-        "description": "Required description of the output"
-      },
-      "<output2>": {
-        "description": "Required description of the output"
+      "default": {
+        "description": "Put esponse from Xero invoice and manual journal"
       }
     },
-    "commands": {
-      "<command1>": {
-        "description": "Required description of the command",
-        "type": "Optional type and other metadata with any key."
-      },
-      "<command2>": {
-        "description": "Required description of the command"
-      }
-    }
+    "commands": {}
   }
 }
