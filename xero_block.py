@@ -55,6 +55,8 @@ class XeroPut(Block):
         for signal in signals:
             invoice_resp_signal = self.xero.invoices.put({
                 'Type': self.invoice_type(signal),
+                # TODO: add status for created/paid/authorized or whatever
+                # TODO: add 'reference'
                 'Contact': {
                     'Name': self.contact_name(signal)
                 },
@@ -65,6 +67,29 @@ class XeroPut(Block):
                     'TaxAmount': self.line_items().tax_amount(signal)
                 }]
             })
+
+            # invoice created (2 journal entries):
+                # journal lines (1st):
+                    # 1: receivables account debited subtotal
+                    # 2: stripe clearing account credited subtotal
+                # journal lines (2nd):
+                    # 1: debits stripe clearing account
+                    # 2: credits unearned revenue account
+
+            # **invoice needs to be approved before it can be paid**
+
+            # invoice paid:
+                # update corresponding invoice
+                    # send amount paid, date paid, account paid to (SVB), reference (stripe payment)
+                # journal lines:
+                    # 1: debit cash
+                    # 2: credit receivables
+                    # 3: debit Fees CC
+                # journal lines:
+                    # 1: debit unearned revue
+                    # 2: credit receivables
+                    # 3: credit Taxes payable
+
             manual_journal_resp_signal = self.xero.manualjournals.put({
                 # TODO: What should LineAmount equal?
                     # sum of LineAmounts needs to = 'total credits'
@@ -72,6 +97,7 @@ class XeroPut(Block):
                 'JournalLines': [{
                     'LineAmount': self.line_items().unit_amount(signal),
                     'AccountCode': 210
+                    # TODO: Signify if its a debit or credit?
                 },
                 {
                     'LineAmount': self.line_items().unit_amount(signal)*-1,
