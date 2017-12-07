@@ -54,3 +54,8 @@ docs/_build/
 
 # vim swap file
 *.swp
+
+# rsa public/private key files
+.pem
+.cer
+.pfx
