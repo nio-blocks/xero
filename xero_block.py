@@ -1,4 +1,4 @@
-import json
+from datetime import datetime, timedelta
 from xero import Xero
 from xero.auth import PrivateCredentials
 
@@ -23,9 +23,9 @@ class XeroPut(Block):
                                   default='[[XERO_CONSUMER_KEY]]',
                                   allow_none=False)
 
-    # status = StringProperty(title='Invoice Status', default='PAID')
-    contact_name = StringProperty(title='Customer(Contact) Name',
-                                  default='{{ $customer_name }}')
+    status = StringProperty(title='Invoice Status', default='SUBMITTED')
+    contact_name = StringProperty(title='Contact Name (Stripe customerID)',
+                                  default='{{ $customer }}')
     invoice_type = StringProperty(title='Invoice Type',
                           default='ACCREC',
                           allow_none=False)
@@ -54,56 +54,47 @@ class XeroPut(Block):
     def process_signals(self, signals):
         for signal in signals:
             invoice_resp_signal = self.xero.invoices.put({
-                'Type': self.invoice_type(signal),
-                # TODO: add status for created/paid/authorized or whatever
-                # TODO: add 'reference'
+                'Type': self.invoice_type(signal),                          # ACCREC
+                # TODO: Should this be hardcoded? Or do we want ACCPAY option?
                 'Contact': {
-                    'Name': self.contact_name(signal)
+                    'Name': self.contact_name(signal)                       # Stripe customer ('cus_000...')
                 },
+                'DueDate': datetime.utcnow() + timedelta(days=30),
                 'LineItems': [{
                     'Description': self.line_items().description(signal),
                     'Quantity': self.line_items().quantity(signal),
                     'UnitAmount': self.line_items().unit_amount(signal),
-                    'TaxAmount': self.line_items().tax_amount(signal)
+                    'TaxAmount': self.line_items().tax_amount(signal),
+                    'TaxType': 'NONE',
+                    'AccountCode': 310                                      # SVB account
+                }],
+                'Status': self.status(signal)
+            })
+
+            manual_journal_resp_signal_1 = self.xero.manualjournals.put({
+                'Narration': self.line_items().description(signal),
+                'JournalLines': [{
+                    'LineAmount': self.line_items().unit_amount(signal),    # + debited subtotal
+                    'AccountCode': 210                                      # receivables account
+                },
+                {
+                    'LineAmount': self.line_items().unit_amount(signal)*-1, # - credited subtotal
+                    'AccountCode': 210                                      # stripe clearing account
                 }]
             })
 
-            # invoice created (2 journal entries):
-                # journal lines (1st):
-                    # 1: receivables account debited subtotal
-                    # 2: stripe clearing account credited subtotal
-                # journal lines (2nd):
-                    # 1: debits stripe clearing account
-                    # 2: credits unearned revenue account
-
-            # **invoice needs to be approved before it can be paid**
-
-            # invoice paid:
-                # update corresponding invoice
-                    # send amount paid, date paid, account paid to (SVB), reference (stripe payment)
-                # journal lines:
-                    # 1: debit cash
-                    # 2: credit receivables
-                    # 3: debit Fees CC
-                # journal lines:
-                    # 1: debit unearned revue
-                    # 2: credit receivables
-                    # 3: credit Taxes payable
-
-            manual_journal_resp_signal = self.xero.manualjournals.put({
-                # TODO: What should LineAmount equal?
-                    # sum of LineAmounts needs to = 'total credits'
-                'Narration': self.line_items().description(signal),
+            manual_journal_resp_signal_2 = self.xero.manualjournals.put({
+                'Narration': self.line_items.description(signal),
                 'JournalLines': [{
-                    'LineAmount': self.line_items().unit_amount(signal),
-                    'AccountCode': 210
-                    # TODO: Signify if its a debit or credit?
+                    'LineAmount': self.line_items.unit_amount(signal),      # + debited subtotal
+                    'AccountCode': 220                                      # stripe clearing account
                 },
                 {
-                    'LineAmount': self.line_items().unit_amount(signal)*-1,
-                    'AccountCode': 210
+                    'LineAmount': self.line_items.unit_amount(signal)*-1,   # - credited subtotal
+                    'AccountCode': 220                                      # unearned revenue account
                 }]
             })
 
         self.notify_signals([Signal(invoice_resp_signal[0]),
-                             Signal(manual_journal_resp_signal[0])])
+                             Signal(manual_journal_resp_signal_1[0]),
+                             Signal(manual_journal_resp_signal_2[0])])
