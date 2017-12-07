@@ -48,7 +48,7 @@ class XeroUpdate(Block):
                 order='UpdatedDateUTC DESC')[0]
 
             invoice_id = invoice_resp_signal['InvoiceID']
-            invoice_subtotal = invoice_resp_signal['Subtotal']
+            invoice_subtotal = invoice_resp_signal['SubTotal']
             invoice_tax = invoice_resp_signal['TotalTax']
             invoice_total = invoice_resp_signal['Total']
 
@@ -102,7 +102,7 @@ class XeroUpdate(Block):
                 }]
             })
 
-        self.notify_signals([Signal(invoice_resp_signal[0]),
+        self.notify_signals([Signal(invoice_resp_signal),
                              Signal(manual_journal_resp_signal_1[0]),
                              Signal(manual_journal_resp_signal_2[0]),
                              Signal(manual_journal_resp_signal_3[0])])

@@ -52,11 +52,6 @@ class XeroPut(Block):
         super().start()
 
     def process_signals(self, signals):
-        print('')
-        print('@@@@@@')
-        print(self.line_items().unit_amount(signals[0]))
-        print('@@@@@@')
-        print('')
         for signal in signals:
             invoice_resp_signal = self.xero.invoices.put({
                 'Type': self.invoice_type(signal),                          # ACCREC
