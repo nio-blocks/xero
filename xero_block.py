@@ -23,7 +23,7 @@ class XeroPut(Block):
                                   default='[[XERO_CONSUMER_KEY]]',
                                   allow_none=False)
 
-    status = StringProperty(title='Invoice Status', default='SUBMITTED')
+    # status = StringProperty(title='Invoice Status', default='SUBMITTED')
     contact_name = StringProperty(title='Contact Name (Stripe customerID)',
                                   default='{{ $customer }}')
     invoice_type = StringProperty(title='Invoice Type',
@@ -52,6 +52,11 @@ class XeroPut(Block):
         super().start()
 
     def process_signals(self, signals):
+        print('')
+        print('@@@@@@')
+        print(self.line_items().unit_amount(signals[0]))
+        print('@@@@@@')
+        print('')
         for signal in signals:
             invoice_resp_signal = self.xero.invoices.put({
                 'Type': self.invoice_type(signal),                          # ACCREC
@@ -68,7 +73,7 @@ class XeroPut(Block):
                     'TaxType': 'NONE',
                     'AccountCode': 310                                      # SVB account
                 }],
-                'Status': self.status(signal)
+                'Status': 'SUBMITTED'
             })
 
             manual_journal_resp_signal_1 = self.xero.manualjournals.put({
@@ -84,13 +89,13 @@ class XeroPut(Block):
             })
 
             manual_journal_resp_signal_2 = self.xero.manualjournals.put({
-                'Narration': self.line_items.description(signal),
+                'Narration': self.line_items().description(signal),
                 'JournalLines': [{
-                    'LineAmount': self.line_items.unit_amount(signal),      # + debited subtotal
+                    'LineAmount': self.line_items().unit_amount(signal),      # + debited subtotal
                     'AccountCode': 220                                      # stripe clearing account
                 },
                 {
-                    'LineAmount': self.line_items.unit_amount(signal)*-1,   # - credited subtotal
+                    'LineAmount': self.line_items().unit_amount(signal)*-1,   # - credited subtotal
                     'AccountCode': 220                                      # unearned revenue account
                 }]
             })
