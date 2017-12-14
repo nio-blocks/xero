@@ -16,6 +16,16 @@ class LineItems(PropertyHolder):
     tax_amount = FloatProperty(title='Tax Amount', default='{{ $sales_tax }}')
 
 
+class AccountCodes(PropertyHolder):
+    svb_code = IntProperty(title='SVB Account Code', default = 310)
+    receivables_code = IntProperty(title='Receivables Account Code',
+                                   default = 210)
+    stripe_clearing_code = IntProperty(title='Stripe Clearing Account Code',
+                                       default=220)
+    unearned_code = IntProperty(title='Unearned Revenue Account Code',
+                                default=230)
+
+
 class XeroPut(Block):
 
     version = VersionProperty('0.1.0')
@@ -32,6 +42,10 @@ class XeroPut(Block):
     line_items = ObjectProperty(LineItems,
                               title='Invoice Line Item',
                               default={})
+    account_codes = ObjectProperty(AccountCodes,
+                                   title='Xero Account Codes',
+                                   default={})
+
 
     def __init__(self):
         self.xero = None
@@ -66,7 +80,7 @@ class XeroPut(Block):
                     'UnitAmount': self.line_items().unit_amount(signal),
                     'TaxAmount': self.line_items().tax_amount(signal),
                     'TaxType': 'NONE',
-                    'AccountCode': 310                                      # SVB account
+                    'AccountCode': self.account_codes().svb_code()
                 }],
                 'Status': 'SUBMITTED'
             })
@@ -75,11 +89,11 @@ class XeroPut(Block):
                 'Narration': self.line_items().description(signal),
                 'JournalLines': [{
                     'LineAmount': self.line_items().unit_amount(signal),    # + debited subtotal
-                    'AccountCode': 210                                      # receivables account
+                    'AccountCode': self.account_codes().receivables_code()
                 },
                 {
                     'LineAmount': self.line_items().unit_amount(signal)*-1, # - credited subtotal
-                    'AccountCode': 210                                      # stripe clearing account
+                    'AccountCode': self.account_codes().stripe_clearing_code()
                 }]
             })
 
@@ -87,11 +101,11 @@ class XeroPut(Block):
                 'Narration': self.line_items().description(signal),
                 'JournalLines': [{
                     'LineAmount': self.line_items().unit_amount(signal),      # + debited subtotal
-                    'AccountCode': 220                                      # stripe clearing account
+                    'AccountCode': self.account_codes().stripe_clearing_code()
                 },
                 {
                     'LineAmount': self.line_items().unit_amount(signal)*-1,   # - credited subtotal
-                    'AccountCode': 220                                      # unearned revenue account
+                    'AccountCode': self.account_codes().unearned_code()
                 }]
             })
 

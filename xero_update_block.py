@@ -8,6 +8,23 @@ from nio.properties import VersionProperty, ObjectProperty, StringProperty, \
     PropertyHolder, FloatProperty, IntProperty
 
 
+class AccountCodes(PropertyHolder):
+    cash_code = IntProperty(title='Cash Account Code', default = 300)
+    receivables_code = IntProperty(title='Receivables Account Code',
+                                   default = 210)
+    fees_cc_code = IntProperty(title='Credit Card Fees Account Code',
+                                       default=240)
+    unearned_code = IntProperty(title='Unearned Revenue Account Code',
+                                default=230)
+    revenue_receivables_code = IntProperty(
+        title='Revenue Receivables Account Code',
+        default=250
+    )
+    taxes_payable_code = IntProperty(title='Taxes Payable Account Code',
+                                     default=260)
+
+
+
 class XeroUpdate(Block):
 
     version = VersionProperty('0.1.0')
@@ -20,7 +37,11 @@ class XeroUpdate(Block):
                                   default='{{ $customer }}')
     description = StringProperty(title='Transaction Description',
                                  default='Description')
-    payment_amount = FloatProperty(title='Amount Paid', default='{{ $amount }}')
+    payment_amount = FloatProperty(title='Amount Paid',
+                                   default='{{ $amount }}')
+    account_codes = ObjectProperty(AccountCodes,
+                                   title='Account Codes',
+                                   default={})
 
     def __init__(self):
         self.xero = None
@@ -66,11 +87,11 @@ class XeroUpdate(Block):
                 'Narration': self.description(signal),
                 'JournalLines': [{
                     'LineAmount': invoice_total,
-                    'AccountCode': 210                                      # cash account
+                    'AccountCode': self.account_codes().cash_code()
                 },
                 {
-                    'LineAmount': invoice_total*-1,                         # receivables account
-                    'AccountCode': 210
+                    'LineAmount': invoice_total*-1,
+                    'AccountCode': self.account_codes().receivables_code()
                 }]
             })
 
@@ -78,15 +99,15 @@ class XeroUpdate(Block):
                 'Narration': self.description(signal),
                 'JournalLines': [{
                     'LineAmount': invoice_total,
-                    'AccountCode': 210                                      # unearned revenue account
+                    'AccountCode': self.account_codes().unearned_code()
                 },
                 {
                     'LineAmount': invoice_subtotal*-1,
-                    'AccountCode': 210                                      # revenue receivables
+                    'AccountCode': self.account_codes().revenue_receivables_code()
                 },
                 {
                     'LineAmount': invoice_tax*-1,
-                    'AccountCode': 210                                      # taxes payable amount
+                    'AccountCode': self.account_codes().taxes_payable_code()
                 }]
             })
 
@@ -94,11 +115,11 @@ class XeroUpdate(Block):
                 'Narration': self.description(signal),
                 'JournalLines': [{
                     'LineAmount': invoice_subtotal*0.29 + 0.30,
-                    'AccountCode': 210                                      # fees CC account
+                    'AccountCode': self.account_codes().fees_cc_code()
                 },
                 {
-                    'LineAmount': (invoice_subtotal*0.29 + 0.30)*-1,        # cash account
-                    'AccountCode': 210
+                    'LineAmount': (invoice_subtotal*0.29 + 0.30)*-1,
+                    'AccountCode': self.account_codes().cash_code()
                 }]
             })
 
