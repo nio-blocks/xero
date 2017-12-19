@@ -2,10 +2,22 @@ from datetime import datetime, timedelta
 from xero import Xero
 from xero.auth import PrivateCredentials
 
-from nio import Block
+from nio.block.base import Block
 from nio.signal.base import Signal
-from nio.properties import VersionProperty, ObjectProperty, StringProperty, \
-    PropertyHolder, FloatProperty, IntProperty
+from nio.properties import (StringProperty, PropertyHolder, Property,
+                            ListProperty, VersionProperty, IntProperty,
+                            FloatProperty, ObjectProperty)
+
+
+class JournalLines(PropertyHolder):
+    line_amount = Property(default='{{ $amount }}', title='Line Amount')
+    account_code = Property(default=100, title='Account Code')
+    line_description = Property(default='Description', title='Description')
+
+
+class ManualJournals(PropertyHolder):
+    narration = StringProperty(default='Narration', title="Narration")
+    journal_lines = ListProperty(JournalLines, title='Journal Lines', default=[])
 
 
 class LineItems(PropertyHolder):
@@ -14,38 +26,27 @@ class LineItems(PropertyHolder):
     quantity = IntProperty(title='Quantity', default=1)
     unit_amount = FloatProperty(title='Unit Amount', default='{{ $amount }}')
     tax_amount = FloatProperty(title='Tax Amount', default='{{ $sales_tax }}')
+    invoice_type = StringProperty(title='Invoice Type',
+                                  default='ACCREC',
+                                  allow_none=False)
+    invoice_account_code = IntProperty(title='Invoice Account Code',
+                                       default=100)
 
 
-class AccountCodes(PropertyHolder):
-    svb_code = IntProperty(title='SVB Account Code', default = 310)
-    receivables_code = IntProperty(title='Receivables Account Code',
-                                   default = 210)
-    stripe_clearing_code = IntProperty(title='Stripe Clearing Account Code',
-                                       default=220)
-    unearned_code = IntProperty(title='Unearned Revenue Account Code',
-                                default=230)
+class XeroDev(Block):
 
-
-class XeroPut(Block):
-
+    manual_journal_entries = ListProperty(ManualJournals,
+                                          title='Manual Journal Entries',
+                                          default=[])
+    line_items = ObjectProperty(LineItems,
+                              title='Invoice Line Item',
+                              default={})
     version = VersionProperty('0.1.0')
     consumer_key = StringProperty(title='Xero Consumer Key',
                                   default='[[XERO_CONSUMER_KEY]]',
                                   allow_none=False)
-
-    # status = StringProperty(title='Invoice Status', default='SUBMITTED')
     contact_name = StringProperty(title='Contact Name (Stripe customerID)',
                                   default='{{ $customer }}')
-    invoice_type = StringProperty(title='Invoice Type',
-                          default='ACCREC',
-                          allow_none=False)
-    line_items = ObjectProperty(LineItems,
-                              title='Invoice Line Item',
-                              default={})
-    account_codes = ObjectProperty(AccountCodes,
-                                   title='Xero Account Codes',
-                                   default={})
-
 
     def __init__(self):
         self.xero = None
@@ -66,10 +67,10 @@ class XeroPut(Block):
         super().start()
 
     def process_signals(self, signals):
+        response_signal = []
         for signal in signals:
-            invoice_resp_signal = self.xero.invoices.put({
-                'Type': self.invoice_type(signal),                          # ACCREC
-                # TODO: Should this be hardcoded? Or do we want ACCPAY option?
+            response_signal.append(Signal(self.xero.invoices.put({
+                'Type': self.line_items().invoice_type(),                          # ACCREC
                 'Contact': {
                     'Name': self.contact_name(signal)                       # Stripe customer ('cus_000...')
                 },
@@ -80,35 +81,22 @@ class XeroPut(Block):
                     'UnitAmount': self.line_items().unit_amount(signal),
                     'TaxAmount': self.line_items().tax_amount(signal),
                     'TaxType': 'NONE',
-                    'AccountCode': self.account_codes().svb_code()
+                    'AccountCode': self.line_items().invoice_account_code()
                 }],
                 'Status': 'SUBMITTED'
-            })
+            })[0]))
 
-            manual_journal_resp_signal_1 = self.xero.manualjournals.put({
-                'Narration': self.line_items().description(signal),
-                'JournalLines': [{
-                    'LineAmount': self.line_items().unit_amount(signal),    # + debited subtotal
-                    'AccountCode': self.account_codes().receivables_code()
-                },
-                {
-                    'LineAmount': self.line_items().unit_amount(signal)*-1, # - credited subtotal
-                    'AccountCode': self.account_codes().stripe_clearing_code()
-                }]
-            })
+            for man_jour in self.manual_journal_entries():
+                line_items_list = []
+                for jour_line in man_jour.journal_lines():
+                    line_items_list.append({
+                        'Description': jour_line.line_description(),
+                        'LineAmount': jour_line.line_amount(signal),
+                        'AccountCode': jour_line.account_code()
+                    })
+                response_signal.append(Signal(self.xero.manualjournals.put({
+                    'Narration': man_jour.narration(),
+                    'JournalLines': line_items_list
+                })[0]))
 
-            manual_journal_resp_signal_2 = self.xero.manualjournals.put({
-                'Narration': self.line_items().description(signal),
-                'JournalLines': [{
-                    'LineAmount': self.line_items().unit_amount(signal),      # + debited subtotal
-                    'AccountCode': self.account_codes().stripe_clearing_code()
-                },
-                {
-                    'LineAmount': self.line_items().unit_amount(signal)*-1,   # - credited subtotal
-                    'AccountCode': self.account_codes().unearned_code()
-                }]
-            })
-
-        self.notify_signals([Signal(invoice_resp_signal[0]),
-                             Signal(manual_journal_resp_signal_1[0]),
-                             Signal(manual_journal_resp_signal_2[0])])
+        self.notify_signals(response_signal)
