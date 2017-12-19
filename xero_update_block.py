@@ -5,7 +5,19 @@ from xero.auth import PrivateCredentials
 from nio import Block
 from nio.signal.base import Signal
 from nio.properties import VersionProperty, ObjectProperty, StringProperty, \
-    PropertyHolder, FloatProperty, IntProperty
+    PropertyHolder, FloatProperty, IntProperty, ListProperty, Property
+
+
+class JournalLines(PropertyHolder):
+    line_amount = Property(default='{{ $amount }}', title='Line Amount')
+    account_code = Property(default=100, title='Account Code')
+    line_description = Property(default='Description', title='Description')
+
+
+class ManualJournals(PropertyHolder):
+    narration = StringProperty(default='Narration', title="Narration")
+    journal_lines = ListProperty(JournalLines, title='Journal Lines', default=[])
+
 
 
 class XeroUpdate(Block):
@@ -14,13 +26,17 @@ class XeroUpdate(Block):
     consumer_key = StringProperty(title='Xero Consumer Key',
                                   default='[[XERO_CONSUMER_KEY]]',
                                   allow_none=False)
-
-    # status = StringProperty(title='Invoice Status', default='PAID')
+    manual_journal_entries = ListProperty(ManualJournals,
+                                          title='Manual Journal Entries',
+                                          default=[])
     contact_name = StringProperty(title='Contact Name (Stripe customerID)',
                                   default='{{ $customer }}')
     description = StringProperty(title='Transaction Description',
                                  default='Description')
-    payment_amount = FloatProperty(title='Amount Paid', default='{{ $amount }}')
+    payment_amount = FloatProperty(title='Amount Paid',
+                                   default='{{ $amount }}')
+    invoice_account_code = IntProperty(title='Invoice Account Code',
+                                       default=310)
 
     def __init__(self):
         self.xero = None
@@ -41,6 +57,7 @@ class XeroUpdate(Block):
         super().start()
 
     def process_signals(self, signals):
+        response_signal = []
         for signal in signals:
             invoice_resp_signal = self.xero.invoices.filter(
                 Contact_Name=self.contact_name(signal),
@@ -52,57 +69,30 @@ class XeroUpdate(Block):
             invoice_tax = invoice_resp_signal['TotalTax']
             invoice_total = invoice_resp_signal['Total']
 
-            self.xero.payments.put({
+            response_signal.append(Signal(self.xero.payments.put({
                 'Invoice': {
                     'InvoiceID': invoice_id
                 },
                 'Account': {
-                    'Code': 310
+                    'Code': self.invoice_account_code()
                 },
                 'Amount': self.payment_amount(signal)
-            })
+            })[0]))
 
-            manual_journal_resp_signal_1 = self.xero.manualjournals.put({
-                'Narration': self.description(signal),
-                'JournalLines': [{
-                    'LineAmount': invoice_total,
-                    'AccountCode': 210                                      # cash account
-                },
-                {
-                    'LineAmount': invoice_total*-1,                         # receivables account
-                    'AccountCode': 210
-                }]
-            })
+            for man_jour in self.manual_journal_entries():
+                line_items_list = []
+                for jour_line in man_jour.journal_lines():
+                    line_items_list.append({
+                        'Description': jour_line.line_description(),
+                        'LineAmount': jour_line.line_amount(signal),
+                        'AccountCode': jour_line.account_code()
+                    })
+                response_signal.append(Signal(self.xero.manualjournals.put({
+                    'Narration': man_jour.narration(),
+                    'JournalLines': line_items_list
+                })[0]))
 
-            manual_journal_resp_signal_2 = self.xero.manualjournals.put({
-                'Narration': self.description(signal),
-                'JournalLines': [{
-                    'LineAmount': invoice_total,
-                    'AccountCode': 210                                      # unearned revenue account
-                },
-                {
-                    'LineAmount': invoice_subtotal*-1,
-                    'AccountCode': 210                                      # revenue receivables
-                },
-                {
-                    'LineAmount': invoice_tax*-1,
-                    'AccountCode': 210                                      # taxes payable amount
-                }]
-            })
 
-            manual_journal_resp_signal_3 = self.xero.manualjournals.put({
-                'Narration': self.description(signal),
-                'JournalLines': [{
-                    'LineAmount': invoice_subtotal*0.29 + 0.30,
-                    'AccountCode': 210                                      # fees CC account
-                },
-                {
-                    'LineAmount': (invoice_subtotal*0.29 + 0.30)*-1,        # cash account
-                    'AccountCode': 210
-                }]
-            })
 
-        self.notify_signals([Signal(invoice_resp_signal),
-                             Signal(manual_journal_resp_signal_1[0]),
-                             Signal(manual_journal_resp_signal_2[0]),
-                             Signal(manual_journal_resp_signal_3[0])])
+
+        self.notify_signals(response_signal)
