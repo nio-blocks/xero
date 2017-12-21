@@ -4,20 +4,8 @@ from xero.auth import PrivateCredentials
 
 from nio.block.base import Block
 from nio.signal.base import Signal
-from nio.properties import (StringProperty, PropertyHolder, Property,
-                            ListProperty, VersionProperty, IntProperty,
-                            FloatProperty, ObjectProperty)
-
-
-class JournalLines(PropertyHolder):
-    line_amount = Property(default='{{ $amount }}', title='Line Amount')
-    account_code = Property(default=100, title='Account Code')
-    line_description = Property(default='Description', title='Description')
-
-
-class ManualJournals(PropertyHolder):
-    narration = StringProperty(default='Narration', title="Narration")
-    journal_lines = ListProperty(JournalLines, title='Journal Lines', default=[])
+from nio.properties import (StringProperty, PropertyHolder, VersionProperty,
+                            IntProperty, FloatProperty, ObjectProperty)
 
 
 class LineItems(PropertyHolder):
@@ -33,11 +21,8 @@ class LineItems(PropertyHolder):
                                        default=100)
 
 
-class XeroDev(Block):
+class XeroCreateInvoice(Block):
 
-    manual_journal_entries = ListProperty(ManualJournals,
-                                          title='Manual Journal Entries',
-                                          default=[])
     line_items = ObjectProperty(LineItems,
                               title='Invoice Line Item',
                               default={})
@@ -85,18 +70,5 @@ class XeroDev(Block):
                 }],
                 'Status': 'SUBMITTED'
             })[0]))
-
-            for man_jour in self.manual_journal_entries():
-                line_items_list = []
-                for jour_line in man_jour.journal_lines():
-                    line_items_list.append({
-                        'Description': jour_line.line_description(),
-                        'LineAmount': jour_line.line_amount(signal),
-                        'AccountCode': jour_line.account_code()
-                    })
-                response_signal.append(Signal(self.xero.manualjournals.put({
-                    'Narration': man_jour.narration(),
-                    'JournalLines': line_items_list
-                })[0]))
 
         self.notify_signals(response_signal)
