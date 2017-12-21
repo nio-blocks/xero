@@ -4,18 +4,18 @@ from nio.block.terminals import DEFAULT_TERMINAL
 from nio.signal.base import Signal
 from nio.testing.block_test_case import NIOBlockTestCase
 
-from ..xero_create_invoice_block import XeroCreateInvoice
+from ..xero_update_invoice_block import XeroUpdateInvoice
 
 
 class TestXero(NIOBlockTestCase):
 
-    @patch(XeroCreateInvoice.__module__ + '.Xero')
-    @patch(XeroCreateInvoice.__module__ + '.PrivateCredentials')
+    @patch(XeroUpdateInvoice.__module__ + '.Xero')
+    @patch(XeroUpdateInvoice.__module__ + '.PrivateCredentials')
     def test_process_signals(self, patched_creds, patched_xero):
         """Xero is called with proper credentials,
         signal created from put response"""
 
-        blk = XeroCreateInvoice()
+        blk = XeroUpdateInvoice()
         mock_rsa = mock_open(read_data='private_key')
         with patch('builtins.open', mock_rsa):
             self.configure_block(blk, {})
