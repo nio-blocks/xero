@@ -22,21 +22,18 @@ class TestXero(NIOBlockTestCase):
             # define patched_xero return values
             patched_xero.return_value.invoices.put.return_value = \
                 [{'a': 1, 'b':2}]
-            patched_xero.return_value.manualjournals.put.return_value = \
-                [{'a': 3, 'b': 4}]
+
             blk.start()
             blk.process_signals([Signal({
                 "amount": 9.99,
                 'sales_tax': 1.11,
-                'customer_name': 'Customer Number 1'
+                'customer': 'Customer Number 1'
             })])
             blk.stop()
             patched_creds.assert_called_once_with(
                 '[[XERO_CONSUMER_KEY]]', 'private_key')
-            self.assert_num_signals_notified(2)
+            self.assert_num_signals_notified(1)
             self.assertDictEqual(
                 self.last_notified[DEFAULT_TERMINAL][0].to_dict(),
                 {'a': 1, 'b': 2})
-            self.assertDictEqual(
-                self.last_notified[DEFAULT_TERMINAL][1].to_dict(),
-                {'a': 3, 'b': 4})
+
