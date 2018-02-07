@@ -58,6 +58,7 @@ class XeroManualJournals(Block):
                         'AccountCode': jour_line.account_code()
                     })
                 response_signal.append(Signal(self.xero.manualjournals.put({
-                    'Narration': man_jour.narration(),
+                    'Narration': man_jour.narration(signal),
+                    'Status': 'POSTED',
                     'JournalLines': line_items_list
                 })[0]))
