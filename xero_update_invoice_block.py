@@ -15,8 +15,6 @@ class XeroUpdateInvoice(Block):
                                   allow_none=False)
     contact_name = StringProperty(title='Contact Name (Stripe customerID)',
                                   default='{{ $customer }}')
-    description = StringProperty(title='Transaction Description',
-                                 default='Description')
     payment_amount = FloatProperty(title='Amount Paid',
                                    default='{{ $amount }}')
     invoice_account_code = IntProperty(title='Invoice Account Code',
