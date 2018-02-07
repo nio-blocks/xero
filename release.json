@@ -1,5 +1,15 @@
 {
-  "nio/XeroPut": {
+  "nio/XeroCreateInvoice": {
+    "language": "Python",
+    "url": "git://github.com/nio-blocks/xero.git",
+    "version": "0.1.0"
+  },
+  "nio/XeroManualJournals": {
+    "language": "Python",
+    "url": "git://github.com/nio-blocks/xero.git",
+    "version": "0.1.0"
+  },
+  "nio/XeroUpdateInvoice": {
     "language": "Python",
     "url": "git://github.com/nio-blocks/xero.git",
     "version": "0.1.0"
