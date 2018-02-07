@@ -70,7 +70,7 @@
     "commands": {}
   },
   "nio/XeroUpdateInvoice": {
-    "version": "0.1.0",
+    "version": "0.1.2",
     "description": "Add a payment to a previously created invoice in a Xero account.",
     "categories": [
       "Web Data"
