@@ -1,7 +1,7 @@
 {
   "nio/XeroPut": {
     "language": "Python",
-    "url": "git://github.com/cowleyk/xero.git",
+    "url": "git://github.com/nio-blocks/xero.git",
     "version": "0.1.0"
   }
 }

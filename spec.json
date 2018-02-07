@@ -1,41 +1,108 @@
 {
-  "nio/XeroPut": {
+  "nio/XeroCreateInvoice": {
     "version": "0.1.0",
-    "description": "Block to add invoices and manual journal entries to a Xero account",
+    "description": "The XeroCreateInvoice block creates invoices in a Xero account.",
+    "categories": ["Web Data"],
     "properties": {
       "consumer_key": {
         "title": "Xero Consumer Key",
         "type": "StringType",
-        "description": "API Key from Xero",
+        "description": "API Consumer Key from Xero application.",
         "default": "[[XERO_CONSUMER_KEY]]"
       },
       "contact_name": {
-        "title": "Customer(Contact) Name",
+        "title": "Contact Name",
         "type": "StringType",
-        "description": "Name of customer invoiced",
-        "default": "{{ $customer_name }}"
-      },
-      "invoice_type": {
-        "title": "Invoice Type",
-        "type": "StringType",
-        "description": "Either ACCREC for receivables or ACCPAY for payables",
-        "default": "ACCREC"
+        "description": "Name of invoiced customer.",
+        "default": "{{ $customer }}"
       },
       "line_items": {
         "title": "Invoice Line Item",
         "type": "ObjectType",
-        "description": "Information about the transaction",
+        "description": "Information about the transactions.",
         "default": {}
       }
     },
     "inputs": {
       "default": {
-        "description": "Any list of signals containing relevant accounting data"
+        "description": "Any list of signals containing relevant invoice data."
       }
     },
     "outputs": {
       "default": {
-        "description": "Put esponse from Xero invoice and manual journal"
+        "description": "Create Invoice request response from Xero"
+      }
+    },
+    "commands": {}
+  },
+  "nio/XeroManualJournals": {
+    "version": "0.1.0",
+    "description": "Create manual journal entries in a Xero account.",
+    "categories": ["Web Data"],
+    "properties": {
+      "consumer_key": {
+        "title": "Xero Consumer Key",
+        "type": "StringType",
+        "description": "API Consumer Key from Xero application.",
+        "default": "[[XERO_CONSUMER_KEY]]"
+      },
+      "manual_journal_entries": {
+        "title": "Manual Journal Entries",
+        "type": "ListType",
+        "description": "Journal entries to add to xero.  Each entry can have multiple lines containing different accounting data.",
+        "default": []
+      }
+    },
+    "inputs": {
+      "default": {
+        "description": "Any list of signals containing relevant manual journal data."
+      }
+    },
+    "outputs": {
+      "default": {
+        "description": "Post manual journal response from Xero."
+      }
+    },
+    "commands": {}
+  },
+  "nio/XeroUpdateInvoice": {
+    "version": "0.1.0",
+    "description": "Add a payment to a previously created invoice in a Xero account.",
+    "categories": ["Web Data"],
+    "properties": {
+      "consumer_key": {
+        "title": "Xero Consumer Key",
+        "type": "StringType",
+        "description": "API Consumer Key from Xero application.",
+        "default": "[[XERO_CONSUMER_KEY]]"
+      },
+      "contact_name": {
+        "title": "Contact Name (Stripe customerID)",
+        "type": "StringType",
+        "description": "Name of invoiced customer.",
+        "default": "{{ $customer }}"
+      },
+      "invoice_account_code": {
+        "title": "Invoice Account Code",
+        "type": "IntType",
+        "description": "Account code to apply the payment to.",
+        "default": 310
+      },
+      "payment_amount": {
+        "title": "Amount Paid",
+        "type": "FloatType",
+        "description": "Amount paid by customer, should be equal to original invoice amount.",
+        "default": "{{ $amount }}"
+      }
+    },
+    "inputs": {
+      "default": {
+        "description": "Any list of signals containing relevant payment data."
+      }
+    },
+    "outputs": {
+      "default": {
+        "description": "Post payment response from Xero application."
       }
     },
     "commands": {}
