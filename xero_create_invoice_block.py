@@ -26,7 +26,7 @@ class XeroCreateInvoice(Block):
     line_items = ObjectProperty(LineItems,
                               title='Invoice Line Item',
                               default={})
-    version = VersionProperty('0.1.0')
+    version = VersionProperty("0.1.2")
     consumer_key = StringProperty(title='Xero Consumer Key',
                                   default='[[XERO_CONSUMER_KEY]]',
                                   allow_none=False)

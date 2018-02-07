@@ -1,8 +1,10 @@
 {
   "nio/XeroCreateInvoice": {
-    "version": "0.1.0",
+    "version": "0.1.2",
     "description": "The XeroCreateInvoice block creates invoices in a Xero account.",
-    "categories": ["Web Data"],
+    "categories": [
+      "Web Data"
+    ],
     "properties": {
       "consumer_key": {
         "title": "Xero Consumer Key",
@@ -38,7 +40,9 @@
   "nio/XeroManualJournals": {
     "version": "0.1.0",
     "description": "Create manual journal entries in a Xero account.",
-    "categories": ["Web Data"],
+    "categories": [
+      "Web Data"
+    ],
     "properties": {
       "consumer_key": {
         "title": "Xero Consumer Key",
@@ -68,7 +72,9 @@
   "nio/XeroUpdateInvoice": {
     "version": "0.1.0",
     "description": "Add a payment to a previously created invoice in a Xero account.",
-    "categories": ["Web Data"],
+    "categories": [
+      "Web Data"
+    ],
     "properties": {
       "consumer_key": {
         "title": "Xero Consumer Key",
