@@ -1,6 +1,6 @@
 {
   "nio/XeroCreateInvoice": {
-    "version": "0.1.2",
+    "version": "0.1.3",
     "description": "The XeroCreateInvoice block creates invoices in a Xero account.",
     "categories": [
       "Web Data"
