@@ -12,6 +12,6 @@
   "nio/XeroUpdateInvoice": {
     "language": "Python",
     "url": "git://github.com/nio-blocks/xero.git",
-    "version": "0.1.2"
+    "version": "0.1.3"
   }
 }

@@ -9,7 +9,7 @@ from nio.properties import (VersionProperty, StringProperty, FloatProperty,
 
 class XeroUpdateInvoice(Block):
 
-    version = VersionProperty("0.1.2")
+    version = VersionProperty("0.1.3")
     consumer_key = StringProperty(title='Xero Consumer Key',
                                   default='[[XERO_CONSUMER_KEY]]',
                                   allow_none=False)
